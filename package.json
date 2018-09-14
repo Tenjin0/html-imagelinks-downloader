@@ -1,6 +1,6 @@
 {
   "name": "html-imagelinks-downloader",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "dist/main.js",
   "module": "dist/index.es.js",
@@ -8,7 +8,12 @@
     "dist"
   ],
   "types": "dist/main.d.ts",
-  "dependencies": {},
+  "dependencies": {
+    "@types/fs-extra": "^5.0.4",
+    "bluebird": "^3.5.2",
+    "fs-extra": "^7.0.0",
+    "node-fs-extra": "^0.8.2"
+  },
   "devDependencies": {
     "@types/node": "^10.9.4",
     "eslint-config-airbnb": "^17.1.0",

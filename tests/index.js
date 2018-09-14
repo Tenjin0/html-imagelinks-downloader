@@ -1,6 +1,6 @@
 const HttpsLinksConverter = require("../dist/main");
 
-const hlc = new HttpsLinksConverter();
+const hlc = new HttpsLinksConverter("images");
 
 const content =
 	"<!doctype html>" +
@@ -18,14 +18,13 @@ const content =
 	"  </body>" +
 	"</html>";
 
-hlc.convert(content)
-	.then(([html, paths]) => {
-		console.log(html);
-		console.log(paths);
+hlc.convert(content, true)
+	.then(([html, filepaths]) => {
+		console.log(html, filepaths);
+		return hlc.reset();
 	})
-	.then(hlc.reset())
 	.then(() => {
-		console.log("done");
+		console.log("after reset");
 	})
 	.catch(err => {
 		console.log(err);

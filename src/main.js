@@ -1,106 +1,131 @@
-const getHTTPS = require("https").get;
-const { join } = require("path");
-const url = require("url");
-const { createWriteStream, unlink } = require("fs");
+"use strict";
+global.Promise = require("bluebird");
 
-module.exports = class HttpsLinksConverter {
+var https = require("https");
+var path = require("path");
+var url = require("url");
+
+const { createWriteStream, unlink } = require("fs");
+class HttpsLinksConverter {
 	constructor(folder) {
 		if (!folder) {
 			this.folder = __dirname;
 		} else {
 			this.folder = folder;
 		}
-		console.log(this.folder);
 		this.filepaths = [];
 		this.newhtml = "";
-		this.onlyHttps = true;
+		this.httpsOnly = true;
 	}
-
 	/**
 	 * Compare 2 arrays and return data not found in the second
 	 * @param {String} html : html
-	 * @param {String} directory : path of the folder that will contains the images
+	 * @param {boolean} httpsOnly :only take https url
 	 * @returns {Promise} : data not found in the second
 	 */
-	convert(html) {
+	convert(html, httpsOnly) {
+		if (httpsOnly !== undefined && httpsOnly !== null) {
+			this.httpsOnly = httpsOnly;
+		}
 		return new Promise((resolve, reject) => {
-			let result = null;
-			this.newhtml = html;
-			const httpsRegex = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+			const cb = () => {
+				console.log(httpsCount);
+				if (0 === httpsCount) {
+					console.log("resolve");
+					return resolve([this.newhtml, this.filepaths]);
+				}
+			};
 			let httpsCount = 0;
-
-			while (null !== (result = httpsRegex.exec(html))) {
+			this.newhtml = html;
+			const regex = this.httpsOnly
+				? /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
+				: /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+			let result = null;
+			while (null !== (result = regex.exec(html))) {
 				httpsCount++;
 				let httpsUrl = result[1];
 				const filename = result[3];
-
-				const filepath = join(this.folder, filename);
+				const filepath = path.join(this.folder, filename);
 				const file = createWriteStream(filepath);
-
-				const cb = () => {
-					if (0 === httpsCount) {
-						resolve([this.newhtml, this.filepaths]);
-					}
-				};
-
 				const myURL = url.parse(httpsUrl);
-
-				getHTTPS(
-					{
-						method: "GET",
-						host: myURL.host,
-						port: myURL.port,
-						path: myURL.pathname,
-						rejectUnauthorized: false,
-						requestCert: false,
-						agent: false
-					},
-					response => {
+				const options = {
+					// method: "GET",
+					host: myURL.host,
+					port: myURL.port,
+					path: myURL.pathname,
+					rejectUnauthorized: false
+				};
+				https
+					.get(options, response => {
 						response.pipe(file);
 						file.on("finish", () => {
+							console.log("close");
 							httpsCount--;
 							file.close(cb);
 						});
-					}
-				).on("error", err => {
-					// Handle errors
-
-					unlink(filename, () => {
-						httpsCount--;
-						reject(err);
+					})
+					.on("error", err => {
+						console.log("error");
+						unlink(filename, () => {
+							httpsCount--;
+							return reject(err);
+						});
 					});
-				});
-
 				httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-
 				this.newhtml = this.newhtml.replace(
 					httpsUrl,
 					"file:///" + filepath
 				);
-
 				this.filepaths.push(filename);
 			}
-
 			if (0 === httpsCount) {
-				resolve([this.newhtml, this.filepaths]);
+				console.log("resolve");
+				return resolve([this.newhtml, this.filepaths]);
 			}
+			console.log("end");
 		});
 	}
-
+	convertToBase64(html, httpsOnly) {
+		return new Promise((resolve, reject) => {
+			resolve();
+		});
+	}
 	reset() {
 		return new Promise((resolve, reject) => {
+			console.log("reset");
 			let count = 0;
-			for (let i = 0; i < this.filepaths.length; i++) {
-				unlink(join(this.folder, this.filepaths[i]), err => {
-					if (err) {
-						reject(err);
-					}
-					count++;
-					if (this.filepaths.length === count) {
-						resolve();
-					}
-				});
+			if (this.filepaths.length > 0) {
+				for (let i = 0; i < this.filepaths.length; i++) {
+					unlink(path.join(this.folder, this.filepaths[i]), err => {
+						if (err) {
+							console.log("reject 2");
+							return reject(err);
+						}
+						count++;
+						if (this.filepaths.length === count) {
+							this.filepaths = [];
+							this.newhtml = "";
+							console.log("resolve 2");
+							return resolve();
+						}
+					});
+				}
+			} else {
+				console.log("resolve 3");
+				return Promise.resolve();
 			}
+			console.log("end 2");
 		});
 	}
-};
+	getFiles() {
+		return this.filepaths;
+	}
+	getFolder() {
+		return this.folder;
+	}
+	getHtml() {
+		return this.newhtml;
+	}
+}
+
+module.exports = HttpsLinksConverter;

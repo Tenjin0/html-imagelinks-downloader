@@ -1,8 +1,9 @@
-import { get as getHttps, RequestOptions } from "https";
-import { join } from "path";
-import * as url from "url";
+global.Promise  = require("bluebird");
 
-const { createWriteStream, unlink } = require("fs");
+import { get as getHttps, RequestOptions } from "https";
+import { join, isAbsolute } from "path";
+import * as url from "url";
+import {ensureDirSync, createWriteStream, unlink} from "fs-extra"
 
 export default class HttpsLinksConverter {
 
@@ -13,8 +14,13 @@ export default class HttpsLinksConverter {
 
 	constructor(folder: string) {
 		if (!folder) {
-			this.folder = __dirname;
+			this.folder = process.cwd();
 		} else {
+
+			ensureDirSync(folder)
+			if(!isAbsolute(folder)) {
+				folder = join(process.cwd(), folder);
+			}
 			this.folder = folder;
 		}
 		this.filepaths = [];
@@ -29,18 +35,27 @@ export default class HttpsLinksConverter {
 	 * @returns {Promise} : data not found in the second
 	 */
 	convert(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
-		if (httpsOnly !== undefined && httpsOnly !== null)
+
+		if (httpsOnly !== undefined && httpsOnly !== null) {
 			this.httpsOnly = httpsOnly
+		}
+	
 		return new Promise((resolve, reject) => {
 
-			let result: RegExpExecArray = null;
+			const cb: () => void = () => {
+				if (0 === httpsCount) {
+					return resolve([this.newhtml, this.filepaths]);
+				}
+			};
+
+			let httpsCount: number = 0;
 			this.newhtml = html;
 			const regex: RegExp = this.httpsOnly ?
 				/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
 				/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
-			let httpsCount: number = 0;
+			let result: RegExpExecArray = null;
 
-			// console.log(regex)
+
 			while (null !== (result = regex.exec(html))) {
 
 				httpsCount++;
@@ -50,11 +65,6 @@ export default class HttpsLinksConverter {
 				const filepath: string = join(this.folder, filename);
 				const file: any = createWriteStream(filepath);
 
-				const cb: () => void = () => {
-					if (0 === httpsCount) {
-						resolve([this.newhtml, this.filepaths]);
-					}
-				};
 
 				const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
 				const options: RequestOptions = {
@@ -72,18 +82,14 @@ export default class HttpsLinksConverter {
 					response => {
 						response.pipe(file);
 						file.on("finish", () => {
-							console.log("finish");
 							httpsCount--;
 							file.close(cb);
-						}).on("close", () => {
-							console.log("close");
 						});
 					}
 				).on("error", err => {
-
 					unlink(filename, () => {
 						httpsCount--;
-						reject(err);
+						return reject(err);
 					});
 				});
 
@@ -96,11 +102,10 @@ export default class HttpsLinksConverter {
 
 				this.filepaths.push(filename);
 			}
-
 			if (0 === httpsCount) {
-				resolve([this.newhtml, this.filepaths]);
+				return resolve([this.newhtml, this.filepaths]);
 			}
-		});
+		})
 	}
 
 	convertToBase64(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
@@ -114,18 +119,22 @@ export default class HttpsLinksConverter {
 
 		return new Promise((resolve, reject) => {
 			let count: number = 0;
-			for (let i: number = 0; i < this.filepaths.length; i++) {
-				unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
-					if (err) {
-						return reject(err);
-					}
-					count++;
-					if (this.filepaths.length === count) {
-						this.filepaths = [];
-						this.newhtml = "";
-						return resolve();
-					}
-				});
+			if (this.filepaths.length > 0) {
+				for (let i: number = 0; i < this.filepaths.length; i++) {
+					unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
+						if (err) {
+							return reject(err);
+						}
+						count++;
+						if (this.filepaths.length === count) {
+							this.filepaths = [];
+							this.newhtml = "";
+							return resolve();
+						}
+					});
+				}
+			} else {
+				return Promise.resolve();
 			}
 		});
 	}
