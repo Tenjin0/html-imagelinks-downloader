@@ -1,0 +1,39 @@
+{
+  "name": "html-imagelinks-downloader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/main.js",
+  "module": "dist/index.es.js",
+  "files": [
+    "dist"
+  ],
+  "typings": "dist/main.d.ts",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^10.9.4",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-prettier": "^3.0.1",
+    "eslint-plugin-prettier": "^2.6.2",
+    "prettier": "^1.14.2",
+    "rollup": "^0.65.2",
+    "rollup-plugin-typescript2": "^0.17.0",
+    "tslint-config-prettier": "^1.15.0",
+    "tslint-eslint-rules": "^5.4.0",
+    "typescript": "^3.0.3"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -cw",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tenjin0/html-imagelinks-downloader.git"
+  },
+  "author": "Patrice PETIT <petitpatrice@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Tenjin0/html-imagelinks-downloader/issues"
+  },
+  "homepage": "https://github.com/Tenjin0/html-imagelinks-downloader#readme"
+}

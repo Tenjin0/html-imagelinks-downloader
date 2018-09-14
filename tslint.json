@@ -1,0 +1,14 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint-eslint-rules",
+        "tslint-config-prettier"
+    ],
+    "jsRules": {
+        "indent": [true, "tabs", 4],
+    },
+    "rules": {
+        "quotemark" : [true, "double"]
+    },
+    "rulesDirectory": []
+}
