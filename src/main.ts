@@ -9,7 +9,7 @@ export default class HttpsLinksConverter {
 	private folder: string;
 	private filepaths: string[];
 	private newhtml: string;
-	private onlyHttps: boolean;
+	private httpsOnly: boolean;
 
 	constructor(folder: string) {
 		if (!folder) {
@@ -19,28 +19,28 @@ export default class HttpsLinksConverter {
 		}
 		this.filepaths = [];
 		this.newhtml = "";
-		this.onlyHttps = true;
+		this.httpsOnly = true;
 	}
 
 	/**
 	 * Compare 2 arrays and return data not found in the second
 	 * @param {String} html : html
-	 * @param {String} directory : path of the folder that will contains the images
+	 * @param {boolean} httpsOnly :only take https url
 	 * @returns {Promise} : data not found in the second
 	 */
 	convert(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
-
-		if (httpsOnly !== undefined || httpsOnly !== null)
-			this.onlyHttps = httpsOnly
+		if (httpsOnly !== undefined && httpsOnly !== null)
+			this.httpsOnly = httpsOnly
 		return new Promise((resolve, reject) => {
 
 			let result: RegExpExecArray = null;
 			this.newhtml = html;
-			const regex: RegExp = this.onlyHttps ?
+			const regex: RegExp = this.httpsOnly ?
 				/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-				/<img[ ]+src="((http:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+				/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
 			let httpsCount: number = 0;
 
+			// console.log(regex)
 			while (null !== (result = regex.exec(html))) {
 
 				httpsCount++;
@@ -103,6 +103,12 @@ export default class HttpsLinksConverter {
 		});
 	}
 
+	convertToBase64(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
+
+		return new Promise((resolve, reject) => {
+			resolve();
+		});
+	}
 
 	reset(): Promise<void> {
 

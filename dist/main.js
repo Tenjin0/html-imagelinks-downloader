@@ -15,24 +15,25 @@ class HttpsLinksConverter {
         }
         this.filepaths = [];
         this.newhtml = "";
-        this.onlyHttps = true;
+        this.httpsOnly = true;
     }
     /**
      * Compare 2 arrays and return data not found in the second
      * @param {String} html : html
-     * @param {String} directory : path of the folder that will contains the images
+     * @param {boolean} httpsOnly :only take https url
      * @returns {Promise} : data not found in the second
      */
     convert(html, httpsOnly) {
-        if (httpsOnly !== undefined || httpsOnly !== null)
-            this.onlyHttps = httpsOnly;
+        if (httpsOnly !== undefined && httpsOnly !== null)
+            this.httpsOnly = httpsOnly;
         return new Promise((resolve, reject) => {
             let result = null;
             this.newhtml = html;
-            const regex = this.onlyHttps ?
+            const regex = this.httpsOnly ?
                 /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-                /<img[ ]+src="((http:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+                /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
             let httpsCount = 0;
+            // console.log(regex)
             while (null !== (result = regex.exec(html))) {
                 httpsCount++;
                 let httpsUrl = result[1];
@@ -74,6 +75,11 @@ class HttpsLinksConverter {
             if (0 === httpsCount) {
                 resolve([this.newhtml, this.filepaths]);
             }
+        });
+    }
+    convertToBase64(html, httpsOnly) {
+        return new Promise((resolve, reject) => {
+            resolve();
         });
     }
     reset() {
