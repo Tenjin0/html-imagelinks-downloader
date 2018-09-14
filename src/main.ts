@@ -1,9 +1,10 @@
 global.Promise  = require("bluebird");
 
 import { get as getHttps, RequestOptions } from "https";
-import { join, isAbsolute } from "path";
+import { join, isAbsolute, dirname } from "path";
 import * as url from "url";
-import {ensureDirSync, createWriteStream, unlink} from "fs-extra"
+import {mkdirp, stat, createWriteStream, unlink, rmdir} from "fs-extra"
+import * as StackFrame from "stack-trace";
 
 export default class HttpsLinksConverter {
 
@@ -11,33 +12,62 @@ export default class HttpsLinksConverter {
 	private filepaths: string[];
 	private newhtml: string;
 	private httpsOnly: boolean;
+	private _folderCreated: boolean;
+	private _relativeFolder: string;
 
 	constructor(folder: string) {
-		if (!folder) {
-			this.folder = process.cwd();
-		} else {
 
-			ensureDirSync(folder)
-			if(!isAbsolute(folder)) {
-				folder = join(process.cwd(), folder);
-			}
-			this.folder = folder;
+		if (!folder) {
+			var stackPath = StackFrame.get()[1].getFileName();
+			this.folder = dirname(stackPath);
 		}
+		if(!isAbsolute(folder)) {
+			this._relativeFolder = folder
+			var stackPath = StackFrame.get()[1].getFileName();
+			folder = join(dirname(stackPath), folder);
+		}
+		this.folder = folder;
 		this.filepaths = [];
 		this.newhtml = "";
 		this.httpsOnly = true;
 	}
 
+	private checkIfFolderIsCreate(): Promise<void> {
+		
+		return new Promise((resolve, reject) => {
+
+			stat(this.folder, (err, stats) => {
+				if (err && err.code === "ENOENT") {
+					this._folderCreated = true;
+					mkdirp(this.folder).then(() => {
+						return resolve();
+					}).catch((e) => {
+						return reject(e);
+					})
+				} else if (err) {
+					return reject(err)
+				} else {
+					return resolve()
+
+				}
+			})
+		})
+	}
 	/**
 	 * Compare 2 arrays and return data not found in the second
 	 * @param {String} html : html
 	 * @param {boolean} httpsOnly :only take https url
-	 * @returns {Promise} : data not found in the second
+	 * @returns {Promise} : array  [0]: html,  [1]: imagesfiles[]
 	 */
-	convert(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
-
+	async convert(html: string, httpsOnly: boolean): Promise<any> {
+		
 		if (httpsOnly !== undefined && httpsOnly !== null) {
 			this.httpsOnly = httpsOnly
+		}
+		try {
+			await this.checkIfFolderIsCreate();
+		} catch(e) {
+			return Promise.reject(e);
 		}
 	
 		return new Promise((resolve, reject) => {
@@ -105,7 +135,7 @@ export default class HttpsLinksConverter {
 			if (0 === httpsCount) {
 				return resolve([this.newhtml, this.filepaths]);
 			}
-		})
+		});
 	}
 
 	convertToBase64(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
@@ -115,28 +145,38 @@ export default class HttpsLinksConverter {
 		});
 	}
 
-	reset(): Promise<void> {
+	reset(deleteFolder: boolean = false): Promise<void> {
+		if (deleteFolder && this._folderCreated) {
 
-		return new Promise((resolve, reject) => {
-			let count: number = 0;
-			if (this.filepaths.length > 0) {
-				for (let i: number = 0; i < this.filepaths.length; i++) {
-					unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
-						if (err) {
-							return reject(err);
-						}
-						count++;
-						if (this.filepaths.length === count) {
-							this.filepaths = [];
-							this.newhtml = "";
-							return resolve();
-						}
-					});
+			return new Promise((resolve, reject) => {
+				rmdir(this.folder).then(() => {
+					resolve();
+				}).catch((e) => {
+					reject(e);
+				})
+			});
+		} else {
+			return new Promise((resolve, reject) => {
+				let count: number = 0;
+				if (this.filepaths.length > 0) {
+					for (let i: number = 0; i < this.filepaths.length; i++) {
+						unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
+							if (err) {
+								return reject(err);
+							}
+							count++;
+							if (this.filepaths.length === count) {
+								this.filepaths = [];
+								this.newhtml = "";
+								return resolve();
+							}
+						});
+					}
+				} else {
+					return resolve();
 				}
-			} else {
-				return Promise.resolve();
-			}
-		});
+			});
+		}
 	}
 
 	getFiles(): String[] {

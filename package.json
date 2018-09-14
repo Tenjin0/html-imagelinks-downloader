@@ -9,12 +9,16 @@
   ],
   "types": "dist/main.d.ts",
   "dependencies": {
-    "@types/fs-extra": "^5.0.4",
     "bluebird": "^3.5.2",
     "fs-extra": "^7.0.0",
-    "node-fs-extra": "^0.8.2"
+    "install": "^0.12.1",
+    "node-fs-extra": "^0.8.2",
+    "npm": "^6.4.1",
+    "stack-trace": "^0.0.10"
   },
   "devDependencies": {
+    "@types/fs-extra": "^5.0.4",
+    "@types/stack-trace": "^0.0.29",
     "@types/node": "^10.9.4",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^3.0.1",

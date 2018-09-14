@@ -17,11 +17,9 @@ const content =
 	'    <div style="border: 1px solid black; padding: 5px;">ceci est un test</div>' +
 	"  </body>" +
 	"</html>";
-
 hlc.convert(content, true)
-	.then(([html, filepaths]) => {
-		console.log(html, filepaths);
-		return hlc.reset();
+	.then(() => {
+		return hlc.reset(true);
 	})
 	.then(() => {
 		console.log("after reset");

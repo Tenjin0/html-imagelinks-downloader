@@ -4,10 +4,13 @@ global.Promise = require("bluebird");
 var https = require("https");
 var path = require("path");
 var url = require("url");
+var stackTrace = require("stack-trace");
 
 const { createWriteStream, unlink } = require("fs");
 class HttpsLinksConverter {
 	constructor(folder) {
+		const trace = stackTrace.get();
+		console.log(path.dirname(trace[1].getFileName()));
 		if (!folder) {
 			this.folder = __dirname;
 		} else {
@@ -17,6 +20,7 @@ class HttpsLinksConverter {
 		this.newhtml = "";
 		this.httpsOnly = true;
 	}
+
 	/**
 	 * Compare 2 arrays and return data not found in the second
 	 * @param {String} html : html
@@ -85,6 +89,7 @@ class HttpsLinksConverter {
 			console.log("end");
 		});
 	}
+
 	convertToBase64(html, httpsOnly) {
 		return new Promise((resolve, reject) => {
 			resolve();
