@@ -90,6 +90,8 @@ class HttpsLinksConverter {
                     }
                     count++;
                     if (this.filepaths.length === count) {
+                        this.filepaths = [];
+                        this.newhtml = "";
                         return resolve();
                     }
                 });

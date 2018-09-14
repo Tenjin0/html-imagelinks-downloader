@@ -113,7 +113,6 @@ export default class HttpsLinksConverter {
 	reset(): Promise<void> {
 
 		return new Promise((resolve, reject) => {
-
 			let count: number = 0;
 			for (let i: number = 0; i < this.filepaths.length; i++) {
 				unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
@@ -122,6 +121,8 @@ export default class HttpsLinksConverter {
 					}
 					count++;
 					if (this.filepaths.length === count) {
+						this.filepaths = [];
+						this.newhtml = "";
 						return resolve();
 					}
 				});
