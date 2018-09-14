@@ -9,11 +9,7 @@
   ],
   "types": "dist/main.d.ts",
   "dependencies": {
-    "bluebird": "^3.5.2",
     "fs-extra": "^7.0.0",
-    "install": "^0.12.1",
-    "node-fs-extra": "^0.8.2",
-    "npm": "^6.4.1",
     "stack-trace": "^0.0.10"
   },
   "devDependencies": {
