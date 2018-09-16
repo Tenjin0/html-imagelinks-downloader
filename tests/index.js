@@ -10,7 +10,7 @@ const content =
 	"  </head>" +
 	'  <body style="font-family: Arial, Sans-serif; width: 300px">' +
 	'    <div style="width: 100%; text-align: center;">' +
-	'<img src="https://localhost/wyndblack.png" alt="Afficher l\'image d\'origine" width="60" height="70" />' +
+	// '<img src="https://localhost/wyndblack.png" alt="Afficher l\'image d\'origine" width="60" height="70" />' +
 	'<img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Afficher l\'image d\'origine" />' +
 	"    </div>" +
 	"    <br />" +

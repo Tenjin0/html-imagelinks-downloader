@@ -68,13 +68,13 @@ class HttpsLinksConverter {
     /**
      * Compare 2 arrays and return data not found in the second
      * @param {String} html : html
-     * @param {boolean} httpsOnly :only take https url
+     * @param {iOptions} opts : options
      * @returns {Promise} : array  [0]: html,  [1]: imagesfiles[]
      */
-    convert(html, httpsOnly) {
+    convert(html, opts) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (httpsOnly !== undefined && httpsOnly !== null) {
-                this.httpsOnly = httpsOnly;
+            if (opts && opts.httpsOnly !== undefined && opts.httpsOnly !== null) {
+                this.httpsOnly = opts.httpsOnly;
             }
             try {
                 yield this.checkIfFolderIsCreate();
@@ -90,13 +90,14 @@ class HttpsLinksConverter {
                 };
                 let httpsCount = 0;
                 this.newhtml = html;
-                const regex = this.httpsOnly ?
-                    /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-                    /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+                let regex = new RegExp(`<img[ ]+src=\"((http${this.httpsOnly ? "s" : ""}:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)\"[^<]*\/>`, "gi");
                 let result = null;
                 while (null !== (result = regex.exec(html))) {
                     httpsCount++;
                     let httpsUrl = result[1];
+                    if (httpsUrl[0] === "/") {
+                        httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost";
+                    }
                     const filename = result[3];
                     const filepath = join(this.folder, filename);
                     const file = createWriteStream(filepath);
@@ -128,11 +129,6 @@ class HttpsLinksConverter {
                     return resolve([this.newhtml, this.filepaths]);
                 }
             });
-        });
-    }
-    convertToBase64(html, httpsOnly) {
-        return new Promise((resolve, reject) => {
-            resolve();
         });
     }
     reset(deleteFolder = false) {

@@ -1,3 +1,7 @@
+export interface iOptions {
+    httpsOnly: boolean;
+    urlOrigin: string;
+}
 export default class HttpsLinksConverter {
     private folder;
     private filepaths;
@@ -10,11 +14,10 @@ export default class HttpsLinksConverter {
     /**
      * Compare 2 arrays and return data not found in the second
      * @param {String} html : html
-     * @param {boolean} httpsOnly :only take https url
+     * @param {iOptions} opts : options
      * @returns {Promise} : array  [0]: html,  [1]: imagesfiles[]
      */
-    convert(html: string, httpsOnly: boolean): Promise<any>;
-    convertToBase64(html: string, httpsOnly: boolean): Promise<[string, string[]]>;
+    convert(html: string, opts: iOptions): Promise<any>;
     reset(deleteFolder?: boolean): Promise<void>;
     getFiles(): String[];
     getFolder(): String;

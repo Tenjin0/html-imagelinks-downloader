@@ -1,10 +1,16 @@
-global.Promise  = require("bluebird");
+global.Promise = require("bluebird");
 
 import { get as getHttps, RequestOptions } from "https";
 import { join, isAbsolute, dirname } from "path";
 import * as url from "url";
-import {mkdirp, stat, createWriteStream, unlink, rmdir} from "fs-extra"
+import { mkdirp, stat, createWriteStream, unlink, rmdir } from "fs-extra"
 import * as StackFrame from "stack-trace";
+
+
+export interface iOptions {
+	httpsOnly: boolean
+	urlOrigin: string
+}
 
 export default class HttpsLinksConverter {
 
@@ -21,7 +27,7 @@ export default class HttpsLinksConverter {
 			var stackPath = StackFrame.get()[1].getFileName();
 			this.folder = dirname(stackPath);
 		}
-		if(!isAbsolute(folder)) {
+		if (!isAbsolute(folder)) {
 			this._relativeFolder = folder
 			var stackPath = StackFrame.get()[1].getFileName();
 			folder = join(dirname(stackPath), folder);
@@ -33,7 +39,7 @@ export default class HttpsLinksConverter {
 	}
 
 	private checkIfFolderIsCreate(): Promise<void> {
-		
+
 		return new Promise((resolve, reject) => {
 
 			stat(this.folder, (err, stats) => {
@@ -56,20 +62,21 @@ export default class HttpsLinksConverter {
 	/**
 	 * Compare 2 arrays and return data not found in the second
 	 * @param {String} html : html
-	 * @param {boolean} httpsOnly :only take https url
+	 * @param {iOptions} opts : options
 	 * @returns {Promise} : array  [0]: html,  [1]: imagesfiles[]
 	 */
-	async convert(html: string, httpsOnly: boolean): Promise<any> {
-		
-		if (httpsOnly !== undefined && httpsOnly !== null) {
-			this.httpsOnly = httpsOnly
+	async convert(html: string, opts: iOptions): Promise<any> {
+
+		if (opts && opts.httpsOnly !== undefined && opts.httpsOnly !== null) {
+			this.httpsOnly = opts.httpsOnly
 		}
+
 		try {
 			await this.checkIfFolderIsCreate();
-		} catch(e) {
+		} catch (e) {
 			return Promise.reject(e);
 		}
-	
+
 		return new Promise((resolve, reject) => {
 
 			const cb: () => void = () => {
@@ -80,23 +87,26 @@ export default class HttpsLinksConverter {
 
 			let httpsCount: number = 0;
 			this.newhtml = html;
-			const regex: RegExp = this.httpsOnly ?
-				/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-				/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
-			let result: RegExpExecArray = null;
+			let regex = new RegExp(`<img[ ]+src=\"((http${this.httpsOnly ? "s" : ""}:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)\"[^<]*\/>`, "gi");
 
+			let result: RegExpExecArray = null;
 
 			while (null !== (result = regex.exec(html))) {
 
 				httpsCount++;
 				let httpsUrl: string = result[1];
+
+				if (httpsUrl[0] === "/") {
+					httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost"
+				}
+
 				const filename: string = result[3];
 
 				const filepath: string = join(this.folder, filename);
 				const file: any = createWriteStream(filepath);
 
-
 				const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
+
 				const options: RequestOptions = {
 					// method: "GET",
 					host: myURL.host,
@@ -107,15 +117,13 @@ export default class HttpsLinksConverter {
 					// agent: false
 				};
 
-				getHttps(options
-					,
-					response => {
-						response.pipe(file);
-						file.on("finish", () => {
-							httpsCount--;
-							file.close(cb);
-						});
-					}
+				getHttps(options, response => {
+					response.pipe(file);
+					file.on("finish", () => {
+						httpsCount--;
+						file.close(cb);
+					});
+				}
 				).on("error", err => {
 					unlink(filename, () => {
 						httpsCount--;
@@ -135,13 +143,6 @@ export default class HttpsLinksConverter {
 			if (0 === httpsCount) {
 				return resolve([this.newhtml, this.filepaths]);
 			}
-		});
-	}
-
-	convertToBase64(html: string, httpsOnly: boolean): Promise<[string, string[]]> {
-
-		return new Promise((resolve, reject) => {
-			resolve();
 		});
 	}
 
