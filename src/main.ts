@@ -1,4 +1,3 @@
-global.Promise = require("bluebird");
 
 import { get as getHttps, RequestOptions } from "https";
 import { join, isAbsolute, dirname } from "path";
@@ -87,8 +86,9 @@ export default class HttpsLinksConverter {
 
 			let httpsCount: number = 0;
 			this.newhtml = html;
-			let regex = new RegExp(`<img[ ]+src=\"((http${this.httpsOnly ? "s" : ""}:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)\"[^<]*\/>`, "gi");
-
+			const regex: RegExp = this.httpsOnly ?
+				/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
+				/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
 			let result: RegExpExecArray = null;
 
 			while (null !== (result = regex.exec(html))) {
@@ -144,6 +144,78 @@ export default class HttpsLinksConverter {
 				return resolve([this.newhtml, this.filepaths]);
 			}
 		});
+	}
+
+	convertToBase64(html: string, opts: iOptions): Promise<[string, string[]]> {
+
+		return new Promise((resolve, reject) => {
+
+			const cb: () => void = () => {
+				if (0 === httpsCount) {
+					return resolve([this.newhtml, this.filepaths]);
+				}
+			};
+
+			let httpsCount: number = 0;
+			this.newhtml = html;
+			const regex: RegExp = this.httpsOnly ?
+			/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
+			/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+			let result: RegExpExecArray = null;
+
+			while (null !== (result = regex.exec(html))) {
+				httpsCount++;
+				let httpsUrl: string = result[1];
+
+				if (httpsUrl[0] === "/") {
+					httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost"
+				}
+
+				const filename: string = result[3];
+
+				this._requestToBase64(httpsUrl).then((urlBase64) => {
+					this.newhtml = this.newhtml.replace(
+						httpsUrl, urlBase64);
+					cb()
+
+				}).catch((err) => {
+					reject(err);
+				})
+
+				this.filepaths.push(filename);
+			}
+			if (0 === httpsCount) {
+				return resolve([this.newhtml, this.filepaths]);
+			}
+		});
+	}
+
+	_requestToBase64(httpsUrl: string): Promise<string>{
+
+		let imageBase64: string = "data:";
+		const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
+		// console.log(myURL)
+		return new Promise((resolve, reject) => {
+			const options: RequestOptions = {
+				host: myURL.host,
+				port: myURL.port,
+				path: myURL.pathname,
+				rejectUnauthorized: false,
+			};
+			getHttps(options, response => {
+				imageBase64 = response.headers['content-type'] + ";base64,";
+				response
+					.on("data", d => {
+						// console.log(d.toString())
+						imageBase64 += d.toString("base64")
+					})
+			}).on("error", err => {
+				reject(err)
+			}).on("finish", () => {
+				resolve(imageBase64)
+			})
+		})
+
 	}
 
 	reset(deleteFolder: boolean = false): Promise<void> {
