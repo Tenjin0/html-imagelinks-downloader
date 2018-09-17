@@ -20,7 +20,7 @@ const content =
 	"</html>";
 hlc.convertToBase64(content)
 	.then((...data) => {
-        console.log(data)
+		console.log(data);
 		return hlc.reset(true);
 	})
 	.then(() => {
