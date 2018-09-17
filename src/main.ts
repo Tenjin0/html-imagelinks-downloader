@@ -107,13 +107,10 @@ export default class HttpsLinksConverter {
 				const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
 
 				const options: RequestOptions = {
-					// method: "GET",
 					host: myURL.host,
 					port: myURL.port,
 					path: myURL.pathname,
-					rejectUnauthorized: false,
-					// requestCert: false,
-					// agent: false
+					rejectUnauthorized: false
 				};
 
 				getHttps(options, response => {
@@ -193,7 +190,6 @@ export default class HttpsLinksConverter {
 
 		let imageBase64: string = "data:";
 		const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
-		// console.log(myURL)
 		return new Promise((resolve, reject) => {
 			const options: RequestOptions = {
 				host: myURL.host,
@@ -202,16 +198,17 @@ export default class HttpsLinksConverter {
 				rejectUnauthorized: false,
 			};
 			getHttps(options, response => {
+
+				response.setEncoding("base64");
 				imageBase64 = response.headers['content-type'] + ";base64,";
 				response
 					.on("data", d => {
-						// console.log(d.toString())
-						imageBase64 += d.toString("base64")
-					})
+						imageBase64 += d
+					}).on("end", () => {
+						resolve(imageBase64)
+					});
 			}).on("error", err => {
 				reject(err)
-			}).on("finish", () => {
-				resolve(imageBase64)
 			})
 		})
 

@@ -1,4 +1,5 @@
 const HttpsLinksConverter = require("../dist/main");
+const fs = require("fs");
 
 const hlc = new HttpsLinksConverter("images");
 
@@ -12,15 +13,21 @@ const content =
 	'    <div style="width: 100%; text-align: center;">' +
 	// '<img src="https://localhost/wyndblack.png" alt="Afficher l\'image d\'origine" width="60" height="70" />' +
 	'<img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" alt="Afficher l\'image d\'origine" />' +
-	'<img src="https://www.w3schools.com/howto/img_forest.jpg" alt="Afficher l\'image d\'origine" />' +
+	'<img src="https://www.w3schools.com/howto/img_forest.jpg" alt="Afficher l\'image d\'origine2" />' +
 	"    </div>" +
 	"    <br />" +
 	'    <div style="border: 1px solid black; padding: 5px;">ceci est un test</div>' +
 	"  </body>" +
 	"</html>";
+
 hlc.convertToBase64(content)
-	.then((...data) => {
-		console.log(data);
+	.then(data => {
+		console.log(data[1]);
+
+		fs.writeFile("index.html", data[0], function(err) {
+			if (err) throw err;
+			console.log("Saved!");
+		});
 		return hlc.reset(true);
 	})
 	.then(() => {

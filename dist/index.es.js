@@ -135,7 +135,7 @@ class HttpsLinksConverter {
     convertToBase64(html, opts) {
         return new Promise((resolve, reject) => {
             const cb = () => {
-                if (0 === httpsCount) {
+                if (0 === --httpsCount) {
                     return resolve([this.newhtml, this.filepaths]);
                 }
             };
@@ -168,7 +168,6 @@ class HttpsLinksConverter {
     _requestToBase64(httpsUrl) {
         let imageBase64 = "data:";
         const myURL = parse(httpsUrl);
-        // console.log(myURL)
         return new Promise((resolve, reject) => {
             const options = {
                 host: myURL.host,
@@ -177,16 +176,16 @@ class HttpsLinksConverter {
                 rejectUnauthorized: false,
             };
             get(options, response => {
-                imageBase64 = response.headers['content-type'] + ";base64,";
+                response.setEncoding('base64');
+                imageBase64 += response.headers['content-type'] + ";base64,";
                 response
                     .on("data", d => {
-                    // console.log(d.toString())
-                    imageBase64 += d.toString("base64");
+                    imageBase64 += d;
+                }).on('end', () => {
+                    resolve(imageBase64);
                 });
             }).on("error", err => {
                 reject(err);
-            }).on("finish", () => {
-                resolve(imageBase64);
             });
         });
     }
