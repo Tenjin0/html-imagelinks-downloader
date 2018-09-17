@@ -152,6 +152,7 @@ export default class HttpsLinksConverter {
 				}
 			};
 
+			const filepaths = []
 			let httpsCount: number = 0;
 			this.newhtml = html;
 			const regex: RegExp = this.httpsOnly ?
@@ -178,10 +179,10 @@ export default class HttpsLinksConverter {
 					reject(err);
 				})
 
-				this.filepaths.push(filename);
+				filepaths.push(filename);
 			}
 			if (0 === httpsCount) {
-				return resolve([this.newhtml, this.filepaths]);
+				resolve([this.newhtml, filepaths]);
 			}
 		});
 	}
@@ -191,12 +192,14 @@ export default class HttpsLinksConverter {
 		let imageBase64: string = "data:";
 		const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
 		return new Promise((resolve, reject) => {
+
 			const options: RequestOptions = {
 				host: myURL.host,
 				port: myURL.port,
 				path: myURL.pathname,
 				rejectUnauthorized: false,
 			};
+
 			getHttps(options, response => {
 
 				response.setEncoding("base64");
@@ -215,6 +218,7 @@ export default class HttpsLinksConverter {
 	}
 
 	reset(deleteFolder: boolean = false): Promise<void> {
+
 		if (deleteFolder && this._folderCreated) {
 
 			return new Promise((resolve, reject) => {
@@ -226,6 +230,7 @@ export default class HttpsLinksConverter {
 			});
 		} else {
 			return new Promise((resolve, reject) => {
+
 				let count: number = 0;
 				if (this.filepaths.length > 0) {
 					for (let i: number = 0; i < this.filepaths.length; i++) {
