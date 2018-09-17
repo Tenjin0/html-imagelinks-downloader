@@ -1,1 +1,1 @@
-# html-imagelinks-downloader
+# imagelinks-converter
