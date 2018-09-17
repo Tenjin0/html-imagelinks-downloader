@@ -104,11 +104,10 @@ class HttpsLinksConverter {
                     const file = createWriteStream(filepath);
                     const myURL = parse(httpsUrl);
                     const options = {
-                        // method: "GET",
                         host: myURL.host,
                         port: myURL.port,
                         path: myURL.pathname,
-                        rejectUnauthorized: false,
+                        rejectUnauthorized: false
                     };
                     get(options, response => {
                         response.pipe(file);
@@ -135,10 +134,11 @@ class HttpsLinksConverter {
     convertToBase64(html, opts) {
         return new Promise((resolve, reject) => {
             const cb = () => {
-                if (0 === --httpsCount) {
+                if (0 === httpsCount) {
                     return resolve([this.newhtml, this.filepaths]);
                 }
             };
+            const filepaths = [];
             let httpsCount = 0;
             this.newhtml = html;
             const regex = this.httpsOnly ?
@@ -158,10 +158,10 @@ class HttpsLinksConverter {
                 }).catch((err) => {
                     reject(err);
                 });
-                this.filepaths.push(filename);
+                filepaths.push(filename);
             }
             if (0 === httpsCount) {
-                return resolve([this.newhtml, this.filepaths]);
+                resolve([this.newhtml, filepaths]);
             }
         });
     }
@@ -176,12 +176,12 @@ class HttpsLinksConverter {
                 rejectUnauthorized: false,
             };
             get(options, response => {
-                response.setEncoding('base64');
-                imageBase64 += response.headers['content-type'] + ";base64,";
+                response.setEncoding("base64");
+                imageBase64 = response.headers['content-type'] + ";base64,";
                 response
                     .on("data", d => {
                     imageBase64 += d;
-                }).on('end', () => {
+                }).on("end", () => {
                     resolve(imageBase64);
                 });
             }).on("error", err => {
