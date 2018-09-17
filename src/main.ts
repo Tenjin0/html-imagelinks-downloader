@@ -1,5 +1,3 @@
-global.Promise = require("bluebird");
-
 import { get as getHttps, RequestOptions } from "https";
 import { join, isAbsolute, dirname } from "path";
 import * as url from "url";

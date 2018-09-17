@@ -28,7 +28,6 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
-global.Promise = require("bluebird");
 class HttpsLinksConverter {
     constructor(folder) {
         if (!folder) {

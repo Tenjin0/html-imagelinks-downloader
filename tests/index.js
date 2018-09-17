@@ -17,6 +17,7 @@ const content =
 	'    <div style="border: 1px solid black; padding: 5px;">ceci est un test</div>' +
 	"  </body>" +
 	"</html>";
+
 hlc.convert(content, true)
 	.then(() => {
 		return hlc.reset(true);
