@@ -89,7 +89,9 @@ class HttpsLinksConverter {
                 };
                 let httpsCount = 0;
                 this.newhtml = html;
-                let regex = new RegExp(`<img[ ]+src=\"((http${this.httpsOnly ? "s" : ""}:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)\"[^<]*\/>`, "gi");
+                const regex = this.httpsOnly ?
+                    /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
+                    /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
                 let result = null;
                 while (null !== (result = regex.exec(html))) {
                     httpsCount++;
@@ -127,6 +129,63 @@ class HttpsLinksConverter {
                 if (0 === httpsCount) {
                     return resolve([this.newhtml, this.filepaths]);
                 }
+            });
+        });
+    }
+    convertToBase64(html, opts) {
+        return new Promise((resolve, reject) => {
+            const cb = () => {
+                if (0 === --httpsCount) {
+                    return resolve([this.newhtml, this.filepaths]);
+                }
+            };
+            let httpsCount = 0;
+            this.newhtml = html;
+            const regex = this.httpsOnly ?
+                /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
+                /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+            let result = null;
+            while (null !== (result = regex.exec(html))) {
+                httpsCount++;
+                let httpsUrl = result[1];
+                if (httpsUrl[0] === "/") {
+                    httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost";
+                }
+                const filename = result[3];
+                this._requestToBase64(httpsUrl).then((urlBase64) => {
+                    this.newhtml = this.newhtml.replace(httpsUrl, urlBase64);
+                    cb();
+                }).catch((err) => {
+                    reject(err);
+                });
+                this.filepaths.push(filename);
+            }
+            if (0 === httpsCount) {
+                return resolve([this.newhtml, this.filepaths]);
+            }
+        });
+    }
+    _requestToBase64(httpsUrl) {
+        let imageBase64 = "data:";
+        const myURL = parse(httpsUrl);
+        return new Promise((resolve, reject) => {
+            const options = {
+                host: myURL.host,
+                port: myURL.port,
+                path: myURL.pathname,
+                rejectUnauthorized: false,
+            };
+            get(options, response => {
+                response.setEncoding('base64');
+                imageBase64 += response.headers['content-type'] + ";base64,";
+                response
+                    .on("data", d => {
+                    imageBase64 += d;
+                }).on('end', () => {
+                    resolve(imageBase64);
+                });
+            }).on("error", err => {
+                reject(err);
             });
         });
     }

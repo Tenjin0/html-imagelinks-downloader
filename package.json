@@ -14,14 +14,15 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^5.0.4",
-    "@types/stack-trace": "^0.0.29",
     "@types/node": "^10.9.4",
+    "@types/stack-trace": "^0.0.29",
     "eslint-config-airbnb": "^17.1.0",
     "eslint-config-prettier": "^3.0.1",
     "eslint-plugin-prettier": "^2.6.2",
     "prettier": "^1.14.2",
     "rollup": "^0.65.2",
     "rollup-plugin-typescript2": "^0.17.0",
+    "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.15.0",
     "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.0.3"
