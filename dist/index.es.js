@@ -190,38 +190,34 @@ class HttpsLinksConverter {
         });
     }
     reset(deleteFolder = false) {
-        if (deleteFolder && this._folderCreated) {
-            return new Promise((resolve, reject) => {
-                rmdir(this.folder).then(() => {
-                    resolve();
-                }).catch((e) => {
-                    reject(e);
-                });
-            });
-        }
-        else {
-            return new Promise((resolve, reject) => {
-                let count = 0;
-                if (this.filepaths.length > 0) {
-                    for (let i = 0; i < this.filepaths.length; i++) {
-                        unlink(join(this.folder, this.filepaths[i]), (err) => {
-                            if (err) {
-                                return reject(err);
-                            }
-                            count++;
-                            if (this.filepaths.length === count) {
-                                this.filepaths = [];
-                                this.newhtml = "";
-                                return resolve();
-                            }
-                        });
-                    }
+        return new Promise((resolve, reject) => {
+            let count = 0;
+            if (this.filepaths.length > 0) {
+                for (let i = 0; i < this.filepaths.length; i++) {
+                    unlink(join(this.folder, this.filepaths[i]), (err) => {
+                        if (err) {
+                            return reject(err);
+                        }
+                        count++;
+                        if (this.filepaths.length === count) {
+                            this.filepaths = [];
+                            this.newhtml = "";
+                            return resolve();
+                        }
+                    });
                 }
-                else {
-                    return resolve();
-                }
-            });
-        }
+            }
+            else {
+                return resolve();
+            }
+        }).then(() => {
+            if (deleteFolder && this._folderCreated) {
+                return rmdir(this.folder);
+            }
+            else {
+                return Promise.resolve();
+            }
+        });
     }
     getFiles() {
         return this.filepaths;

@@ -20,18 +20,15 @@ const content =
 	"  </body>" +
 	"</html>";
 
-hlc.convertToBase64(content)
-	.then(data => {
-		console.log(data[1]);
-
-		fs.writeFile("index.html", data[0], function(err) {
-			if (err) throw err;
-			console.log("Saved!");
-		});
+hlc.convert(content)
+	.then(() => {
 		return hlc.reset(true);
 	})
 	.then(() => {
-		console.log("after reset");
+		return hlc.convert(content);
+	})
+	.then(() => {
+		return hlc.reset(true).then(() => {});
 	})
 	.catch(err => {
 		console.log(err);

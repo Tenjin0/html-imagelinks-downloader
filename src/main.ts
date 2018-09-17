@@ -219,38 +219,33 @@ export default class HttpsLinksConverter {
 
 	reset(deleteFolder: boolean = false): Promise<void> {
 
-		if (deleteFolder && this._folderCreated) {
+		return new Promise((resolve, reject) => {
 
-			return new Promise((resolve, reject) => {
-				rmdir(this.folder).then(() => {
-					resolve();
-				}).catch((e) => {
-					reject(e);
-				})
-			});
-		} else {
-			return new Promise((resolve, reject) => {
-
-				let count: number = 0;
-				if (this.filepaths.length > 0) {
-					for (let i: number = 0; i < this.filepaths.length; i++) {
-						unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
-							if (err) {
-								return reject(err);
-							}
-							count++;
-							if (this.filepaths.length === count) {
-								this.filepaths = [];
-								this.newhtml = "";
-								return resolve();
-							}
-						});
-					}
-				} else {
-					return resolve();
+			let count: number = 0;
+			if (this.filepaths.length > 0) {
+				for (let i: number = 0; i < this.filepaths.length; i++) {
+					unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
+						if (err) {
+							return reject(err);
+						}
+						count++;
+						if (this.filepaths.length === count) {
+							this.filepaths = [];
+							this.newhtml = "";
+							return resolve();
+						}
+					});
 				}
-			});
-		}
+			} else {
+				return resolve();
+			}
+		}).then(() => {
+			if (deleteFolder && this._folderCreated) {
+				return rmdir(this.folder)
+			} else {
+				return Promise.resolve();
+			}
+		})
 	}
 
 	getFiles(): String[] {
