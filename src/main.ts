@@ -10,6 +10,10 @@ export interface iOptions {
 	urlOrigin: string
 }
 
+
+const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
+const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
+
 export default class HttpsLinksConverter {
 
 	private folder: string;
@@ -86,8 +90,9 @@ export default class HttpsLinksConverter {
 			let httpsCount: number = 0;
 			this.newhtml = html;
 			const regex: RegExp = this.httpsOnly ?
-				/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-				/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+				regImageLinkHttpsOnly :
+				regimageLink
+				;
 			let result: RegExpExecArray = null;
 
 			while (null !== (result = regex.exec(html))) {
@@ -106,22 +111,31 @@ export default class HttpsLinksConverter {
 
 				const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
 
-				const options: RequestOptions = {
-					host: myURL.host,
-					port: myURL.port,
-					path: myURL.pathname,
-					rejectUnauthorized: false
-				};
+				const options: RequestOptions = this._generateOptionsToRequest(myURL)
 
 				getHttps(options, response => {
-					response.pipe(file);
-					file.on("finish", () => {
-						httpsCount--;
-						file.close(cb);
-					});
+
+					if (response.statusCode === 200) {
+
+						response.pipe(file);
+						file.on("finish", () => {
+	
+							httpsCount--;
+							file.close(cb);
+						});
+					} else {
+
+						file.close()
+						unlink(filepath, (err) => {
+
+							httpsCount--;
+							return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
+						});
+					}
 				}
 				).on("error", err => {
-					unlink(filename, () => {
+					file.close()
+					unlink(filepath, () => {
 						httpsCount--;
 						return reject(err);
 					});
@@ -155,9 +169,12 @@ export default class HttpsLinksConverter {
 			const filepaths = []
 			let httpsCount: number = 0;
 			this.newhtml = html;
+
 			const regex: RegExp = this.httpsOnly ?
-			/<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-			/<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+				regImageLinkHttpsOnly :
+				regimageLink
+				;
+
 			let result: RegExpExecArray = null;
 
 			while (null !== (result = regex.exec(html))) {
@@ -187,18 +204,21 @@ export default class HttpsLinksConverter {
 		});
 	}
 
-	_requestToBase64(httpsUrl: string): Promise<string>{
+	_generateOptionsToRequest(myUrl: url.UrlWithStringQuery): RequestOptions {
+		return {
+			host: myUrl.hostname,
+			port: myUrl.port,
+			path: myUrl.pathname,
+			rejectUnauthorized: false,
+		}
+	}
+	_requestToBase64(httpsUrl: string): Promise<string> {
 
 		let imageBase64: string = "data:";
 		const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
 		return new Promise((resolve, reject) => {
 
-			const options: RequestOptions = {
-				host: myURL.host,
-				port: myURL.port,
-				path: myURL.pathname,
-				rejectUnauthorized: false,
-			};
+			const options: RequestOptions = this._generateOptionsToRequest(myURL)
 
 			getHttps(options, response => {
 
@@ -217,19 +237,28 @@ export default class HttpsLinksConverter {
 
 	}
 
+	/**
+	 * Remove all files in folder
+	 * @param deleteFolder if true delete the folder containing temp files
+	 */
 	reset(deleteFolder: boolean = false): Promise<void> {
 
 		return new Promise((resolve, reject) => {
 
 			let count: number = 0;
 			if (this.filepaths.length > 0) {
+
 				for (let i: number = 0; i < this.filepaths.length; i++) {
+
 					unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
+
 						if (err) {
 							return reject(err);
 						}
 						count++;
+
 						if (this.filepaths.length === count) {
+
 							this.filepaths = [];
 							this.newhtml = "";
 							return resolve();

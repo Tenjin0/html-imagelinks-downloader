@@ -28,6 +28,8 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
+const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
 class HttpsLinksConverter {
     constructor(folder) {
         if (!folder) {
@@ -90,8 +92,8 @@ class HttpsLinksConverter {
                 let httpsCount = 0;
                 this.newhtml = html;
                 const regex = this.httpsOnly ?
-                    /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-                    /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+                    regImageLinkHttpsOnly :
+                    regimageLink;
                 let result = null;
                 while (null !== (result = regex.exec(html))) {
                     httpsCount++;
@@ -103,20 +105,25 @@ class HttpsLinksConverter {
                     const filepath = join(this.folder, filename);
                     const file = createWriteStream(filepath);
                     const myURL = parse(httpsUrl);
-                    const options = {
-                        host: myURL.host,
-                        port: myURL.port,
-                        path: myURL.pathname,
-                        rejectUnauthorized: false
-                    };
+                    const options = this._generateOptionsToRequest(myURL);
                     get(options, response => {
-                        response.pipe(file);
-                        file.on("finish", () => {
-                            httpsCount--;
-                            file.close(cb);
-                        });
+                        if (response.statusCode === 200) {
+                            response.pipe(file);
+                            file.on("finish", () => {
+                                httpsCount--;
+                                file.close(cb);
+                            });
+                        }
+                        else {
+                            file.close();
+                            unlink(filepath, (err) => {
+                                httpsCount--;
+                                return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
+                            });
+                        }
                     }).on("error", err => {
-                        unlink(filename, () => {
+                        file.close();
+                        unlink(filepath, () => {
                             httpsCount--;
                             return reject(err);
                         });
@@ -142,8 +149,8 @@ class HttpsLinksConverter {
             let httpsCount = 0;
             this.newhtml = html;
             const regex = this.httpsOnly ?
-                /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g :
-                /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+                regImageLinkHttpsOnly :
+                regimageLink;
             let result = null;
             while (null !== (result = regex.exec(html))) {
                 httpsCount++;
@@ -165,16 +172,19 @@ class HttpsLinksConverter {
             }
         });
     }
+    _generateOptionsToRequest(myUrl) {
+        return {
+            host: myUrl.hostname,
+            port: myUrl.port,
+            path: myUrl.pathname,
+            rejectUnauthorized: false,
+        };
+    }
     _requestToBase64(httpsUrl) {
         let imageBase64 = "data:";
         const myURL = parse(httpsUrl);
         return new Promise((resolve, reject) => {
-            const options = {
-                host: myURL.host,
-                port: myURL.port,
-                path: myURL.pathname,
-                rejectUnauthorized: false,
-            };
+            const options = this._generateOptionsToRequest(myURL);
             get(options, response => {
                 response.setEncoding("base64");
                 imageBase64 = response.headers['content-type'] + ";base64,";
@@ -189,6 +199,10 @@ class HttpsLinksConverter {
             });
         });
     }
+    /**
+     * Remove all files in folder
+     * @param deleteFolder if true delete the folder containing temp files
+     */
     reset(deleteFolder = false) {
         return new Promise((resolve, reject) => {
             let count = 0;
