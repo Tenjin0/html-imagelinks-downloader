@@ -14,6 +14,30 @@ export interface iOptions {
 const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
 const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
 
+
+function _unlinkOnlyFile (file: string, callback: (err: NodeJS.ErrnoException) => void) {
+
+    stat(file, (err, stats) => {
+
+        if (err || !stats.isFile()) {
+            callback(null);
+        }
+        else {
+            unlink(file, callback);
+        }
+
+    });
+
+}
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
 export default class HttpsLinksConverter {
 
 	private folder: string;
@@ -126,7 +150,7 @@ export default class HttpsLinksConverter {
 					} else {
 
 						file.close()
-						unlink(filepath, (err) => {
+						_unlinkOnlyFile(filepath, (err) => {
 
 							httpsCount--;
 							return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
@@ -135,7 +159,7 @@ export default class HttpsLinksConverter {
 				}
 				).on("error", err => {
 					file.close()
-					unlink(filepath, () => {
+					_unlinkOnlyFile(filepath, () => {
 						httpsCount--;
 						return reject(err);
 					});
@@ -250,7 +274,7 @@ export default class HttpsLinksConverter {
 
 				for (let i: number = 0; i < this.filepaths.length; i++) {
 
-					unlink(join(this.folder, this.filepaths[i]), (err: Error) => {
+					_unlinkOnlyFile(join(this.folder, this.filepaths[i]), (err: Error) => {
 
 						if (err) {
 							return reject(err);
