@@ -32,6 +32,24 @@ function __awaiter(thisArg, _arguments, P, generator) {
 
 const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
 const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+function _unlinkOnlyFile(file, callback) {
+    fsExtra.stat(file, (err, stats) => {
+        if (err || !stats.isFile()) {
+            callback(null);
+        }
+        else {
+            fsExtra.unlink(file, callback);
+        }
+    });
+}
+// function __awaiter(thisArg, _arguments, P, generator) {
+//     return new (P || (P = Promise))(function (resolve, reject) {
+//         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+//         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+//         function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+//         step((generator = generator.apply(thisArg, _arguments || [])).next());
+//     });
+// }
 class HttpsLinksConverter {
     constructor(folder) {
         if (!folder) {
@@ -118,14 +136,14 @@ class HttpsLinksConverter {
                         }
                         else {
                             file.close();
-                            fsExtra.unlink(filepath, (err) => {
+                            _unlinkOnlyFile(filepath, (err) => {
                                 httpsCount--;
                                 return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
                             });
                         }
                     }).on("error", err => {
                         file.close();
-                        fsExtra.unlink(filepath, () => {
+                        _unlinkOnlyFile(filepath, () => {
                             httpsCount--;
                             return reject(err);
                         });
@@ -210,7 +228,7 @@ class HttpsLinksConverter {
             let count = 0;
             if (this.filepaths.length > 0) {
                 for (let i = 0; i < this.filepaths.length; i++) {
-                    fsExtra.unlink(path.join(this.folder, this.filepaths[i]), (err) => {
+                    _unlinkOnlyFile(path.join(this.folder, this.filepaths[i]), (err) => {
                         if (err) {
                             return reject(err);
                         }

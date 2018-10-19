@@ -29,7 +29,7 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -cw",
+    "build:watch": "rollup -cw",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
