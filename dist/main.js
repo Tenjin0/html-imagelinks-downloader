@@ -21,6 +21,21 @@ See the Apache Version 2.0 License for specific language governing permissions
 and limitations under the License.
 ***************************************************************************** */
 
+function _unlink (file, callback) {
+
+    fsExtra.stat(file, (err, stats) => {
+
+        if (err || !stats.isFile()) {
+            callback(null);
+        }
+        else {
+            fsExtra.unlink(file, callback);
+        }
+
+    });
+
+}
+
 function __awaiter(thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -118,14 +133,14 @@ class HttpsLinksConverter {
                         }
                         else {
                             file.close();
-                            fsExtra.unlink(filepath, (err) => {
+                            _unlink(filepath, (err) => {
                                 httpsCount--;
                                 return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
                             });
                         }
                     }).on("error", err => {
                         file.close();
-                        fsExtra.unlink(filepath, () => {
+                        _unlink(filepath, () => {
                             httpsCount--;
                             return reject(err);
                         });
@@ -210,7 +225,7 @@ class HttpsLinksConverter {
             let count = 0;
             if (this.filepaths.length > 0) {
                 for (let i = 0; i < this.filepaths.length; i++) {
-                    fsExtra.unlink(path.join(this.folder, this.filepaths[i]), (err) => {
+                    _unlink(path.join(this.folder, this.filepaths[i]), (err) => {
                         if (err) {
                             return reject(err);
                         }
