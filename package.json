@@ -1,6 +1,6 @@
 {
   "name": "imagelinks-converter",
-  "version": "1.1.4",
+  "version": "1.1.6",
   "description": "",
   "main": "dist/main.js",
   "module": "dist/index.es.js",
@@ -29,7 +29,7 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -cw",
+    "build:watch": "rollup -cw",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

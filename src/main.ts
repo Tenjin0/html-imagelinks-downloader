@@ -14,7 +14,6 @@ export interface iOptions {
 const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/?>/g
 const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)".*[^<]\/?>/g;
 
-
 function _unlinkOnlyFile (file: string, callback: (err: NodeJS.ErrnoException) => void) {
 
     stat(file, (err, stats) => {
@@ -29,7 +28,6 @@ function _unlinkOnlyFile (file: string, callback: (err: NodeJS.ErrnoException) =
     });
 
 }
-
 
 export default class HttpsLinksConverter {
 
