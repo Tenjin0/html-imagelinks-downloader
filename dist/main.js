@@ -21,21 +21,6 @@ See the Apache Version 2.0 License for specific language governing permissions
 and limitations under the License.
 ***************************************************************************** */
 
-function _unlink (file, callback) {
-
-    fsExtra.stat(file, (err, stats) => {
-
-        if (err || !stats.isFile()) {
-            callback(null);
-        }
-        else {
-            fsExtra.unlink(file, callback);
-        }
-
-    });
-
-}
-
 function __awaiter(thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -45,8 +30,18 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
-const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
-const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/?>/g;
+const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)".*[^<]\/?>/g;
+function _unlinkOnlyFile(file, callback) {
+    fsExtra.stat(file, (err, stats) => {
+        if (err || !stats.isFile()) {
+            callback(null);
+        }
+        else {
+            fsExtra.unlink(file, callback);
+        }
+    });
+}
 class HttpsLinksConverter {
     constructor(folder) {
         if (!folder) {
@@ -118,7 +113,7 @@ class HttpsLinksConverter {
                     if (httpsUrl[0] === "/") {
                         httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost";
                     }
-                    const filename = result[3];
+                    const filename = result[4];
                     const filepath = path.join(this.folder, filename);
                     const file = fsExtra.createWriteStream(filepath);
                     const myURL = url.parse(httpsUrl);
@@ -133,20 +128,21 @@ class HttpsLinksConverter {
                         }
                         else {
                             file.close();
-                            _unlink(filepath, (err) => {
+                            _unlinkOnlyFile(filepath, (err) => {
                                 httpsCount--;
                                 return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
                             });
                         }
                     }).on("error", err => {
                         file.close();
-                        _unlink(filepath, () => {
+                        _unlinkOnlyFile(filepath, () => {
                             httpsCount--;
                             return reject(err);
                         });
                     });
                     httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-                    this.newhtml = this.newhtml.replace(httpsUrl, "file:///" + filepath);
+                    console.log(httpsUrl);
+                    this.newhtml = this.newhtml.replace(result[1], "file:///" + filepath);
                     this.filepaths.push(filename);
                 }
                 if (0 === httpsCount) {
@@ -225,7 +221,7 @@ class HttpsLinksConverter {
             let count = 0;
             if (this.filepaths.length > 0) {
                 for (let i = 0; i < this.filepaths.length; i++) {
-                    _unlink(path.join(this.folder, this.filepaths[i]), (err) => {
+                    _unlinkOnlyFile(path.join(this.folder, this.filepaths[i]), (err) => {
                         if (err) {
                             return reject(err);
                         }

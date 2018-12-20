@@ -11,8 +11,8 @@ export interface iOptions {
 }
 
 
-const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
-const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g
+const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/?>/g
+const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)".*[^<]\/?>/g;
 
 
 function _unlinkOnlyFile (file: string, callback: (err: NodeJS.ErrnoException) => void) {
@@ -30,14 +30,7 @@ function _unlinkOnlyFile (file: string, callback: (err: NodeJS.ErrnoException) =
 
 }
 
-function __awaiter(thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-}
+
 export default class HttpsLinksConverter {
 
 	private folder: string;
@@ -123,18 +116,14 @@ export default class HttpsLinksConverter {
 
 				httpsCount++;
 				let httpsUrl: string = result[1];
-
 				if (httpsUrl[0] === "/") {
 					httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost"
 				}
 
-				const filename: string = result[3];
-
+				const filename: string = result[4];
 				const filepath: string = join(this.folder, filename);
 				const file: any = createWriteStream(filepath);
-
 				const myURL: url.UrlWithStringQuery = url.parse(httpsUrl);
-
 				const options: RequestOptions = this._generateOptionsToRequest(myURL)
 
 				getHttps(options, response => {
@@ -156,8 +145,7 @@ export default class HttpsLinksConverter {
 							return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
 						});
 					}
-				}
-				).on("error", err => {
+				}).on("error", err => {
 					file.close()
 					_unlinkOnlyFile(filepath, () => {
 						httpsCount--;
@@ -166,9 +154,9 @@ export default class HttpsLinksConverter {
 				});
 
 				httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-
+				console.log(httpsUrl)
 				this.newhtml = this.newhtml.replace(
-					httpsUrl,
+					result[1],
 					"file:///" + filepath
 				);
 

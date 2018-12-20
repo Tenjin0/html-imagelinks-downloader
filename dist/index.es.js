@@ -28,8 +28,18 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
-const regImageLinkHttpsOnly = /<img[ ]+src="((https:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
-const regimageLink = /<img[ ]+src="((https?:\/\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/>/g;
+const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/?>/g;
+const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)".*[^<]\/?>/g;
+function _unlinkOnlyFile(file, callback) {
+    stat(file, (err, stats) => {
+        if (err || !stats.isFile()) {
+            callback(null);
+        }
+        else {
+            unlink(file, callback);
+        }
+    });
+}
 class HttpsLinksConverter {
     constructor(folder) {
         if (!folder) {
@@ -101,7 +111,7 @@ class HttpsLinksConverter {
                     if (httpsUrl[0] === "/") {
                         httpsUrl = opts && opts.urlOrigin ? opts.urlOrigin + httpsUrl : "https://localhost";
                     }
-                    const filename = result[3];
+                    const filename = result[4];
                     const filepath = join(this.folder, filename);
                     const file = createWriteStream(filepath);
                     const myURL = parse(httpsUrl);
@@ -116,20 +126,21 @@ class HttpsLinksConverter {
                         }
                         else {
                             file.close();
-                            unlink(filepath, (err) => {
+                            _unlinkOnlyFile(filepath, (err) => {
                                 httpsCount--;
                                 return reject(new Error(filename + ": " + response.statusCode + " " + response.statusMessage));
                             });
                         }
                     }).on("error", err => {
                         file.close();
-                        unlink(filepath, () => {
+                        _unlinkOnlyFile(filepath, () => {
                             httpsCount--;
                             return reject(err);
                         });
                     });
                     httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-                    this.newhtml = this.newhtml.replace(httpsUrl, "file:///" + filepath);
+                    console.log(httpsUrl);
+                    this.newhtml = this.newhtml.replace(result[1], "file:///" + filepath);
                     this.filepaths.push(filename);
                 }
                 if (0 === httpsCount) {
@@ -208,7 +219,7 @@ class HttpsLinksConverter {
             let count = 0;
             if (this.filepaths.length > 0) {
                 for (let i = 0; i < this.filepaths.length; i++) {
-                    unlink(join(this.folder, this.filepaths[i]), (err) => {
+                    _unlinkOnlyFile(join(this.folder, this.filepaths[i]), (err) => {
                         if (err) {
                             return reject(err);
                         }
