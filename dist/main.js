@@ -30,8 +30,8 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
-const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)"[^<]*\/?>/g;
-const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg))[\\/?&=\w]*)".*[^<]\/?>/g;
+const regImageLinkHttpsOnly = /<img.*src="(((https:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg|gif))[\\/?&=\w]*)"[^<]*\/?>/g;
+const regimageLink = /<img.*src="(((https?:\/)?\/[.:\\/\w]+)*\/([-.#!:?+=&%@!\w]+[.](png|tiff|jpg|jpeg|gif))[\\/?&=\w]*)"[^<]*\/?>/g;
 function _unlinkOnlyFile(file, callback) {
     fsExtra.stat(file, (err, stats) => {
         if (err || !stats.isFile()) {
