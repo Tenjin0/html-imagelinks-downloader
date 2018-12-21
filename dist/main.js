@@ -141,7 +141,6 @@ class HttpsLinksConverter {
                         });
                     });
                     httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-                    console.log(httpsUrl);
                     this.newhtml = this.newhtml.replace(result[1], "file:///" + filepath);
                     this.filepaths.push(filename);
                 }
