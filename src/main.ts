@@ -153,7 +153,7 @@ export default class HttpsLinksConverter {
 
 				httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
 				this.newhtml = this.newhtml.replace(
-					result[1],
+					new RegExp(result[1], 'g'),
 					"file:///" + filepath
 				);
 

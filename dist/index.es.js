@@ -139,7 +139,7 @@ class HttpsLinksConverter {
                         });
                     });
                     httpsUrl = httpsUrl.replace(/\\\\/g, "\\");
-                    this.newhtml = this.newhtml.replace(result[1], "file:///" + filepath);
+                    this.newhtml = this.newhtml.replace(new RegExp(result[1], 'g'), "file:///" + filepath);
                     this.filepaths.push(filename);
                 }
                 if (0 === httpsCount) {

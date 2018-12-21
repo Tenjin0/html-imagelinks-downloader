@@ -11,8 +11,7 @@ https.get(urlToTest, res => {
 			body += chunk;
 		});
 		res.on("end", () => {
-			console.log("end");
-			hlc.convert(content, {
+			hlc.convert(body, {
 				urlOrigin: urlToTest
 			}).then(() => {
 				const html = hlc.getHtml();
